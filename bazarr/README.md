@@ -1,6 +1,8 @@
 # Bazarr
 
-![Traefik logo](https://4057985046-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F-MhuHu35r-jv6X4gG8MQ%2Fuploads%2FCFOkzlFh23IMYvSkSoe6%2Ftraefik-logo.jpg?alt=media&token=33c6b6a6-fb44-4b89-bce3-1c13ee62d0ce)
+<p align="center">
+  <img height="300" alt="Bazarr Logo" src="https://developer.asustor.com/uploadIcons/0020_999_1576215325_bazarr_256.png">
+</p>
 
 Companion app for Sonarr and Radarr for downloading subtitles on demand.
 
