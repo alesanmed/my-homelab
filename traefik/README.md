@@ -18,6 +18,8 @@ Copy the `.env.example` file and rename it to `.env`. Replace the variables acco
 | OVH_APPLICATION_SECRET  | OVH application secret for DNS challenge         |
 | OVH_CONSUMER_KEY        | OVH consumer key for DNS challenge               |
 | OVH_ENDPOINT            | OVH endpoint for DNS challenge                   |
+| HOST                    | Host used for this service                       |
+| LOCAL_IP_RANGE          | IP range for restricting the access to service   |
 
 ## Deployment
 
