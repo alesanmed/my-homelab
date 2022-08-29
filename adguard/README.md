@@ -11,6 +11,7 @@ Copy the `.env.example` file and rename it to `.env`. Replace the variables acco
 | Variable name           | Description                                      |
 |-------------------------|--------------------------------------------------|
 | HOST                    | Host used for this service                       |
+| DEFAULT_NETWORK         | Default network                       |
 
 ## Deployment
 
