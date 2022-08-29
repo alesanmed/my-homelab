@@ -1,0 +1,34 @@
+version: "3.9"
+services:
+  minecraft:
+    image: itzg/minecraft-server:latest
+    restart: unless-stopped
+    environment:
+      - EULA=TRUE
+      - TYPE=FORGE
+      - MEMORY=10G
+      - VERSION=1.18.2
+      - FORGEVERSION=40.1.60
+      - MAX_THREADS=4
+      - GENERIC_PACK=https://mediafiles.forgecdn.net/files/3879/238/Better+MC+Server+Pack+%5bPLUS%5d+v13.zip
+    volumes:
+      - ${DOCKER_DATA}/minecraft/data:/data
+    expose:
+      - 25565/udp
+      - 25575
+    healthcheck:
+      test: ["CMD", "mc-monitor", "status"]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.udp.routers.minecraft-udp.entrypoints=minecraftudp"
+      - "traefik.udp.routers.minecraft-udp.service=minecraft-udp"
+      - "traefik.udp.services.minecraft-udp.loadbalancer.server.port=25565"
+      - "traefik.tcp.routers.minecraft-tcp.entrypoints=minecrafttcp"
+      - "traefik.tcp.routers.minecraft-tcp.rule=ClientIP(`0.0.0.0/0`)"
+      - "traefik.tcp.routers.minecraft-tcp.service=minecraft-tcp"
+      - "traefik.tcp.services.minecraft-tcp.loadbalancer.server.port=25565"
+
+networks:
+  default:
+    external: true
+    name: ${DEFAULT_NETWORK}
