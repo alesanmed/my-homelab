@@ -10,7 +10,7 @@ Copy the `.env.example` file and rename it to `.env`. Replace the variables acco
 
 | Variable name           | Description                                      |
 |-------------------------|--------------------------------------------------|
-| DOCKER_DATA             | Local path where you want the data tot be stored |
+| DOCKER_DATA             | Local path where you want the data to be stored |
 | DEFAULT_NETWORK         | Default network name                             |
 | LETS_ENCRYPT_EMAIL      | Let's encrypt email                              |
 | LETS_ENCRYPT_STORAGE    | Let's encrypt file name to store certs           |
