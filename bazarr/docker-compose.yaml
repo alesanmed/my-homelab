@@ -1,0 +1,45 @@
+version: "3.8"
+services:
+  bazarr:
+    image: hotio/bazarr:release
+    container_name: bazarr
+    restart: unless-stopped
+    expose:
+      - 6767
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+    volumes:
+      - ${DOCKER_DATA}/bazarr/config:/config
+      - media_data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bazarr.rule=Host(`$HOST`)"
+      - "traefik.http.routers.bazarr.entryPoints=web,websecure"
+      - "traefik.http.routers.bazarr.middlewares=secured-local"
+      - traefik.http.services.bazarr.loadbalancer.server.port=6767
+    networks:
+      - media_network
+      - traefik_network
+    deploy:
+      resources:
+        limits:
+          memory: $MEMORY_LIMIT
+          cpus: '$CPU_LIMIT'
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
+  media_network:
+    external: true
+    name: ${MEDIA_NETWORK}
+
+volumes:
+  media_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '${MEDIA_VOLUME_PATH}'
