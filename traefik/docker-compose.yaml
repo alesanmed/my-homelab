@@ -1,0 +1,107 @@
+version: "3.8"
+services:
+  traefik:
+    image: traefik:v2.8.1
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "25565:25565"
+      - "25565:25565/udp"
+      - "5055:5055"
+      - "5055:5055/udp"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "${DOCKER_DATA}/traefik/acme.json:/acme.json"
+      - "${DOCKER_DATA}/traefik/log:/log"
+    command:
+      # Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=$DEFAULT_NETWORK"
+      # Enable ping
+      - "--ping=true"
+      # Dashboard
+      - "--api.dashboard=true"
+      # Cert resolver
+      - "--certificatesresolvers.lets-encrypt=true"
+      - "--certificatesresolvers.lets-encrypt.acme.email=$LETS_ENCRYPT_EMAIL"
+      - "--certificatesresolvers.lets-encrypt.acme.storage=$LETS_ENCRYPT_STORAGE"
+      - "--certificatesresolvers.lets-encrypt.acme.dnschallenge.provider=ovh"
+      - "--certificatesresolvers.lets-encrypt.acme.dnschallenge.resolvers=9.9.9.9:53,149.112.112.112:53"
+      # Logs
+      - "--log=true"
+      - "--log.level=DEBUG"
+      - "--log.filepath=/log/traefik.log"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/log/access.log"
+      # Entrypoints
+      ## Web
+      - "--entrypoints.web=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      ## Websecure
+      - "--entrypoints.websecure=true"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls=true"
+      - "--entrypoints.websecure.http.tls.certresolver=lets-encrypt"
+      ## Metrics
+      - "--entrypoints.metrics=true"
+      - "--entrypoints.metrics.address=:9323"
+      ## Minecraft (TCP)
+      - "--entrypoints.minecrafttcp=true"
+      - "--entrypoints.minecrafttcp.address=:25565"
+      ## minecraft (UDP)
+      - "--entrypoints.minecraftudp=true"
+      - "--entrypoints.minecraftudp.address=:25565/udp"
+      ## Traccar (port 5055)
+      - "--entrypoints.traccar5055=true"
+      - "--entrypoints.traccar5055.address=:5055"
+      # Metrics
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addrouterslabels=true"
+      - "--metrics.prometheus.entrypoint=metrics"
+    labels:
+      # Internal router
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-api.rule=Host(`${HOST}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.traefik-api.entryPoints=web,websecure"
+      - "traefik.http.routers.traefik-api.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=secured-local"
+      # Local secure middleware
+      - "traefik.http.middlewares.secured-local.chain.middlewares=local-access,security-headers"
+      # Local access middleware
+      - "traefik.http.middlewares.local-access.ipWhitelist.sourceRange=${LOCAL_IP_RANGE}"
+      # Security headers
+      - "traefik.http.middlewares.security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.security-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.security-headers.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.server="
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.x-powered-by="
+    environment:
+      - "OVH_APPLICATION_KEY=$OVH_APPLICATION_KEY"
+      - "OVH_APPLICATION_SECRET=$OVH_APPLICATION_SECRET"
+      - "OVH_CONSUMER_KEY=$OVH_CONSUMER_KEY"
+      - "OVH_ENDPOINT=$OVH_ENDPOINT"
+    dns:
+      - 9.9.9.9
+      - 149.112.112.112
+    healthcheck:
+      test: "wget --no-verbose --tries=1 --spider http://localhost:8080/ping || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+networks:
+  default:
+    external: true
+    name: ${DEFAULT_NETWORK}
