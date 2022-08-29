@@ -1,0 +1,37 @@
+version: "3.8"
+services:
+  adguard:
+    image: adguard/adguardhome:v0.107.8
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dns-admin.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.dns-admin.middlewares=secured-local"
+      - "traefik.http.routers.dns-admin.entryPoints=web,websecure"
+      - traefik.http.services.dns-admin.loadbalancer.server.port=3000
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "853:853/tcp"
+    volumes:
+      - "adguard_data:/opt/adguardhome/work"
+      - "adguard_config:/opt/adguardhome/conf"
+    healthcheck:
+      test: "$$(wget --no-verbose --spider --tries=1 http://localhost:3000 || exit 1) && /bin/netstat -pant | grep 53"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.02'
+
+networks:
+  default:
+    external: true
+    name: ${DEFAULT_NETWORK}
+
+volumes:
+  adguard_data:
+  adguard_config:
