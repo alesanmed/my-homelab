@@ -22,8 +22,6 @@ Copy the `.env.example` file and rename it to `.env`. Replace the variables acco
 
 Deploying this instance of cyberchef can be done running one command.
 
-Then, deploy the service running:
-
 ```bash
 docker compose up -d
 ```
