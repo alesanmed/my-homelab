@@ -71,6 +71,8 @@ services:
       - "traefik.http.routers.traefik.middlewares=secured-local"
       # Local secure middleware
       - "traefik.http.middlewares.secured-local.chain.middlewares=local-access,security-headers"
+      # External secure middleware
+      - "traefik.http.middlewares.secured-external.chain.middlewares=security-headers"
       # Local access middleware
       - "traefik.http.middlewares.local-access.ipWhitelist.sourceRange=${LOCAL_IP_RANGE}"
       # Security headers
