@@ -1,0 +1,56 @@
+version: "3.8"
+services:
+  calibre-server:
+    image: lscr.io/linuxserver/calibre:latest
+    restart: unless-stopped
+    expose:
+      - 8080
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+    volumes:
+      - ${DESKTOP_DOCKER_DATA}/calibre/server/config:/config
+      - ${DESKTOP_DOCKER_DATA}/calibre/server/plugin:/calibre/plugins
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.calibre_desktop.rule=Host(`$DESKTOP_HOST`)"
+      - "traefik.http.routers.calibre_desktop.entryPoints=web,websecure"
+      - "traefik.http.routers.calibre_desktop.middlewares=secured-local"
+      - traefik.http.services.calibre_desktop.loadbalancer.server.port=8080
+    deploy:
+      resources:
+        limits:
+          memory: $DESKTOP_MEMORY_LIMIT
+          cpus: '$DESKTOP_CPU_LIMIT'
+
+  calibre-web:
+    image: lscr.io/linuxserver/calibre-web:latest
+    restart: unless-stopped
+    expose:
+      - 8083
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - DOCKER_MODS=linuxserver/universal-calibre:calibre #optional
+      - OAUTHLIB_RELAX_TOKEN_SCOPE=1 #optional
+    volumes:
+      - ${WEB_DOCKER_DATA}/calibre/web/config:/config
+      - ${WEB_DOCKER_DATA}/calibre/server/config:/books
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.calibre.rule=Host(`$WEB_HOST`)"
+      - "traefik.http.routers.calibre.entryPoints=web,websecure"
+      - "traefik.http.routers.calibre_desktop.middlewares=secured-external"
+      - traefik.http.services.calibre.loadbalancer.server.port=8083
+    deploy:
+      resources:
+        limits:
+          memory: $WEB_MEMORY_LIMIT
+          cpus: '$WEB_CPU_LIMIT'
+
+networks:
+  default:
+    external: true
+    name: ${DEFAULT_NETWORK}
