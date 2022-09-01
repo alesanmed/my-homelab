@@ -46,7 +46,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.ghost.rule=Host(`$HOST`)"
       - "traefik.http.routers.ghost.entryPoints=web, websecure"
-      - "traefik.http.routers.ghost.middlewares=secured-local"
+      - "traefik.http.routers.ghost.middlewares=secured-external"
       - traefik.http.services.ghost.loadbalancer.server.port=2368
     networks:
       - ghost
