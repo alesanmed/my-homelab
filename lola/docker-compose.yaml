@@ -1,0 +1,44 @@
+version: "3.9"
+services:
+  dashboard:
+    image: alesanchez/lola-dashboard:0.1.2
+    restart: "unless-stopped"
+    expose:
+      - $DASHBOARD_PORT
+    environment:
+      - PORT=$DASHBOARD_PORT
+      - BACK_URL=http://backend:$BACKEND_PORT
+      - SERVER_ADDRESS=$DASHBOARD_HOST
+      - STREAMLIT_STATIC_PATH=/lola-dashboard/assets
+    labels:
+      - "traefik.enable=true"
+      - traefik.http.routers.loladash.rule=Host(`$DASHBOARD_HOST`)
+      - "traefik.http.routers.loladash.entryPoints=web,websecure"
+      - "traefik.http.routers.loladash.middlewares=secured-external"
+      - traefik.http.services.loladash.loadbalancer.server.port=$DASHBOARD_PORT
+    networks:
+      - traefik_network
+      - lola
+
+  backend:
+    image: alesanchez/lola-backend:0.1.0
+    restart: "unless-stopped"
+    expose:
+      - $BACKEND_PORT
+    environment:
+      - PORT=$BACKEND_PORT
+    labels:
+      - traefik.http.routers.lolaback.rule=Host(`$BACKEND_HOST`)
+      - "traefik.http.routers.lolaback.entryPoints=web,websecure"
+      - "traefik.http.routers.lolaback.middlewares=secured-external"
+      - traefik.http.services.lolaback.loadbalancer.server.port=$BACKEND_PORT
+    networks:
+      - lola
+      - traefik_network
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
+  lola:
+    external: false
