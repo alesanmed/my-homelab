@@ -1,0 +1,42 @@
+version: "3.9"
+services:
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    expose:
+      - 3000
+    environment:
+      - GF_SERVER_DOMAIN=$HOST
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_FROM_ADDRESS=$MAIL_FROM_MAIL
+      - "GF_SMTP_FROM_NAME=$MAIL_FROM_NAME"
+      - "GF_SMTP_HOST=$MAIL_SMTP_SERVER"
+      - GF_SMTP_STARTTLS_POLICY=MandatoryStartTLS
+      - GF_SMTP_USER=$MAIL_USER
+      - "GF_SMPT_PASSWORD=$MAIL_PASSWORD"
+    volumes:
+      - grafana_storage:/var/lib/grafana
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`$HOST`)"
+      - "traefik.http.routers.grafana.entryPoints=web,websecure"
+      - "traefik.http.routers.grafana.middlewares=secured-local"
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+    networks:
+      - grafana
+      - traefik_network
+    deploy:
+      resources:
+        limits:
+          memory: $GRAFANA_MEMORY_LIMIT
+          cpus: "$GRAFANA_CPU_LIMIT"
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
+  grafana:
+    external: false
+
+volumes:
+  grafana_storage:
