@@ -15,7 +15,7 @@ services:
       resources:
         limits:
           memory: $MYSQL_MEMORY_LIMIT
-          cpus: '$MYSQL_CPU_LIMIT'
+          cpus: "$MYSQL_CPU_LIMIT"
 
   ghost:
     image: ghost:5.2.3-alpine
@@ -55,8 +55,7 @@ services:
       resources:
         limits:
           memory: $GHOST_MEMORY_LIMIT
-          cpus: '$GHOST_CPU_LIMIT'
-
+          cpus: "$GHOST_CPU_LIMIT"
 
 networks:
   traefik_network:
@@ -64,6 +63,6 @@ networks:
     name: ${DEFAULT_NETWORK}
   ghost:
     external: false
-    
+
 volumes:
   ghost_db:
