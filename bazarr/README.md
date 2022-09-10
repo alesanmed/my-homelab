@@ -24,7 +24,7 @@ Copy the `.env.example` file and rename it to `.env`. Replace the variables acco
 
 ## Deployment
 
-Deploying this instance of bazarr can be done running a couple of commands. First, you have to create a network with the same name as you put in `MEDIA_NETWORK` variable.
+Deploying this instance of bazarr can be done running a couple of commands. First, you have to create a network with the same name as you put in `MEDIA_NETWORK` variable, if the network doesn't exists already.
 
 ```bash
 docker network create example_network
