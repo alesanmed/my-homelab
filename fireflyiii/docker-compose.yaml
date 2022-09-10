@@ -1,0 +1,107 @@
+version: "3.9"
+services:
+  firefly_db:
+    image: postgres:14.4-alpine3.16
+    restart: unless-stopped
+    volumes:
+      - firefly_db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=$POSTGRES_DB
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+    networks:
+      - firefly
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d firefly" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: $POSTGRES_MEMORY_LIMIT
+          cpus: "$POSTGRES_CPU_LIMIT"
+
+  firefly_redis:
+    image: bitnami/redis:7.0.2
+    restart: unless-stopped
+    volumes:
+      - firefly_redis:/data
+    environment:
+      - REDIS_PASSWORD=$REDIS_PASSWORD
+    networks:
+      - firefly
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli",
+          "-a $REDIS_PASSWORD",
+          "ping"
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: $REDIS_MEMORY_LIMIT
+          cpus: "$REDIS_CPU_LIMIT"
+
+  firefly:
+    image: fireflyiii/core:latest
+    restart: unless-stopped
+    volumes:
+      - firefly_upload:/var/www/html/storage/upload
+    expose:
+      - 8080
+    env_file:
+      - .env
+      - firefly_config.env
+    depends_on:
+      - firefly_db
+      - firefly_redis
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.firefly.rule=Host(`$HOST`)
+      - "traefik.http.routers.firefly.entryPoints=web,websecure"
+      - "traefik.http.routers.firefly.middlewares=secured-external"
+      - "traefik.http.services.firefly.loadbalancer.server.port=8080"
+      - network.bridge=false
+    networks:
+      - traefik_network
+      - firefly
+    deploy:
+      resources:
+        limits:
+          memory: $FIREFLY_MEMORY_LIMIT
+          cpus: "$FIREFLY_CPU_LIMIT"
+
+  firefly_cron:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - firefly_config.env
+    depends_on:
+      - firefly
+    networks:
+      - firefly
+    deploy:
+      resources:
+        limits:
+          memory: $FIREFLY_CRON_MEMORY_LIMIT
+          cpus: "$FIREFLY_CRON_CPU_LIMIT"
+
+volumes:
+  firefly_db:
+  firefly_redis:
+  firefly_upload:
+
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
+  firefly:
+    external: false
