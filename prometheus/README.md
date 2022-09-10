@@ -17,6 +17,8 @@ Copy the `.env.example` file and rename it to `.env`. Replace the variables acco
 
 > Note: Bear in mind that CPU limit is a percentage of the total. If your server doesn't have a lot of CPU, adjust the limits to provide enough resources.
 
+If you want to further configure your prometheus instance, you can place a `prometheus.yaml` file in `$DOCKER_DATA/prometheus/config/prometheus.yml`. All documentation related to that file can be found (here)[https://prometheus.io/docs/prometheus/latest/configuration/configuration/].
+
 ## Deployment
 
 Deploying this instance of prometheus can be done running one command.
