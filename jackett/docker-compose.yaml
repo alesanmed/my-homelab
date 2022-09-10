@@ -1,0 +1,49 @@
+version: "3.9"
+services:
+  jackett:
+    image: lscr.io/linuxserver/jackett
+    container_name: jackett
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - $DOCKER_DATA/jackett/config:/config
+      - media_data:/data
+    expose:
+      - 9117
+    networks:
+      - media_network
+      - traefik_network
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.jackett.rule=Host(`$HOST`)"
+      - "traefik.http.routers.jackett.entryPoints=web,websecure"
+      - "traefik.http.routers.jackett.middlewares=secured-local"
+      - "traefik.http.services.jackett.loadbalancer.server.port=9117"
+    healthcheck:
+      test: "curl --fail http://localhost:9117/UI/Dashboard || exit 1"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: $MEMORY_LIMIT
+          cpus: "$CPU_LIMIT"
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
+  media_network:
+    external: true
+    name: ${MEDIA_NETWORK}
+
+volumes:
+  media_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '${MEDIA_VOLUME_PATH}'
