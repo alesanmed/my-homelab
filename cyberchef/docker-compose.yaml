@@ -8,8 +8,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.cyberchef.rule=Host(`$HOST`)"
-      - "traefik.http.routers.cyberchef.entryPoints=web, websecure"
-      - "traefik.http.routers.cyberchef.middlewares=secured-local"
+      - "traefik.http.routers.cyberchef.entryPoints=web,websecure"
+      - "traefik.http.routers.cyberchef.middlewares=secured-external"
       - traefik.http.services.cyberchef.loadbalancer.server.port=8000
     deploy:
       resources:
