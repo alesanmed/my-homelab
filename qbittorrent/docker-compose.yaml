@@ -1,0 +1,55 @@
+version: "3.9"
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ${DOCKER_DATA}/qbittorrent/config:/config
+      - media_data:/data
+    expose:
+      - 6881
+      - 6881/udp
+      - 8080
+    networks:
+      - media_network
+      - traefik_network
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.torrent.rule=Host(`$HOST`)"
+      - "traefik.http.routers.torrent.entryPoints=web,websecure"
+      - "traefik.http.routers.torrent.middlewares=secured-local,torrent-headers"
+      - "traefik.http.services.torrent.loadbalancer.passhostheader=false"
+      - "traefik.http.services.torrent.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.torrent-headers.headers.customrequestheaders.X-Frame-Options=SAMEORIGIN"
+      - "traefik.http.middlewares.torrent-headers.headers.customrequestheaders.Referer="
+      - "traefik.http.middlewares.torrent-headers.headers.customrequestheaders.Origin="
+    restart: unless-stopped
+    healthcheck:
+      test: "curl --fail http://localhost:8080 || exit 1"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: $MEMORY_LIMIT
+          cpus: $CPU_LIMIT
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
+  media_network:
+    external: true
+    name: ${MEDIA_NETWORK}
+
+volumes:
+  media_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '${MEDIA_VOLUME_PATH}'
