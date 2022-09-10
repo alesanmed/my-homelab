@@ -31,7 +31,7 @@ services:
       - traefik.enable=true
       - "traefik.http.routers.prometheus.rule=Host(`$HOST`)"
       - "traefik.http.routers.prometheus.entryPoints=web,websecure"
-      - "traefik.http.routers.prometheus.middlewares=secured-external"
+      - "traefik.http.routers.prometheus.middlewares=secured-internal"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
     networks:
       - traefik_network
