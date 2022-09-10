@@ -1,0 +1,79 @@
+version: "3.9"
+services:
+  nextcloud_db:
+    image: postgres:14.0-alpine3.14
+    restart: unless-stopped
+    volumes:
+      - nextcloud_db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=$POSTGRES_DB
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+    networks:
+      - nextcloud
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-U $POSTGRES_USER", "-d $POSTGRES_DB"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+  
+  nextcloud_redis:
+    image: bitnami/redis:6.2.6
+    restart: unless-stopped
+    volumes:
+      - nextcloud_redis:/data
+    environment:
+      - REDIS_PASSWORD=$REDIS_PASSWORD
+    networks:
+      - nextcloud
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli", "-a $REDIS_PASSWORD", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  nextcloud:
+    image: nextcloud:production
+    restart: unless-stopped
+    volumes:
+      - $DOCKER_DATA/nextcloud:/var/www/html
+    expose:
+      - 80
+    environment:
+      - POSTGRES_HOST=nextcloud_db
+      - POSTGRES_DB=$POSTGRES_DB
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      - REDIS_HOST=nextcloud_redis
+      - REDIS_HOST_PASSWORD=$REDIS_PASSWORD
+      - NEXTCLOUD_ADMIN_USER=$NEXTCLOUD_ADMIN_USER
+      - NEXTCLOUD_ADMIN_PASSWORD=$NEXTCLOUD_ADMIN_PASSWORD
+      - NEXTCLOUD_TRUSTED_DOMAINS=$HOST
+      - NEXTCLOUD_HOSTNAME=$HOST
+      - OVERWRITEHOST=$HOST
+    depends_on:
+      - nextcloud_db
+      - nextcloud_redis
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.nextcloud.rule=Host(`$HOST`)
+      - "traefik.http.routers.nextcloud.entryPoints=web,websecure"
+      - "traefik.http.routers.nextcloud.middlewares=secured-external,nextcloudHeaders,nextcloudDav"
+      - "traefik.http.middlewares.nextcloudHeaders.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.nextcloudDav.replacePathRegex.regex=^/.well-known/ca(l|rd)dav"
+      - "traefik.http.middlewares.nextcloudDav.replacePathRegex.replacement=/remote.php/dav/"
+      - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+    networks:
+      - traefik_network
+      - nextcloud
+
+volumes:
+  nextcloud_db:
+  nextcloud_redis:
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
+  nextcloud:
+    external: false
