@@ -1,0 +1,54 @@
+version: "3.9"
+services:
+  traccar_db:
+    image: postgres:14.0-alpine3.14
+    restart: unless-stopped
+    volumes:
+      - traccar_db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=$POSTGRES_DB
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+    networks:
+      - traccar
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d traccar" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  traccar:
+    image: traccar/traccar:5.1-alpine
+    volumes:
+      - ${DOCKER_DATA}/traccar/logs:/opt/traccar/logs:rw
+      - ${DOCKER_DATA}/traccar/config/traccar.xml:/opt/traccar/conf/traccar.xml:ro
+    expose:
+      - 8082
+      - 5000-5200
+    networks:
+      - traccar
+      - traefik_network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traccar.rule=Host(`$WEB_HOST`)
+      - "traefik.http.routers.traccar.entryPoints=web,websecure"
+      - "traefik.http.routers.traccar.middlewares=secured-local"
+      - "traefik.http.routers.traccar.service=traccar-web"
+      - "traefik.http.services.traccar-web.loadbalancer.server.port=8082"
+      - traefik.http.routers.traccar-5055.rule=Host(`$SERVER_HOST`)
+      - traefik.http.routers.traccar-5055.tls=true
+      - traefik.http.routers.traccar-5055.entrypoints=traccar5055
+      - traefik.http.routers.traccar-5055.tls.certResolver=lets-encrypt
+      - "traefik.http.routers.traccar-5055.service=traccar-5055"
+      - "traefik.http.services.traccar-5055.loadbalancer.server.port=5055"
+
+volumes:
+  traccar_db:
+
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
+  traccar:
+    external: false
