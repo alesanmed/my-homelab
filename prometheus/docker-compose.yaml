@@ -1,0 +1,47 @@
+version: "3.9"
+services:
+  cadvisor:
+    image: google/cadvisor:latest
+    restart: unless-stopped
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    expose:
+      - 8080
+    networks:
+      - monitoring
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    restart: unless-stopped
+    expose:
+      - 9100
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus
+    restart: unless-stopped
+    volumes:
+      - $DOCKER_DAEMON_SOCK:/var/run/docker.sock
+      - $DOCKER_DATA/prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.prometheus.rule=Host(`$HOST`)"
+      - "traefik.http.routers.prometheus.entryPoints=web,websecure"
+      - "traefik.http.routers.prometheus.middlewares=secured-external"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+    networks:
+      - traefik_network
+      - monitoring
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
+  monitoring:
+    external: false
