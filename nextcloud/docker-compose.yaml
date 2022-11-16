@@ -12,11 +12,17 @@ services:
     networks:
       - nextcloud
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "-U $POSTGRES_USER", "-d $POSTGRES_DB"]
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-U ${POSTGRES_USER}",
+          "-d ${POSTGRES_DB}"
+        ]
       interval: 10s
       timeout: 10s
       retries: 5
-  
+
   nextcloud_redis:
     image: bitnami/redis:6.2.6
     restart: unless-stopped
@@ -27,13 +33,19 @@ services:
     networks:
       - nextcloud
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli", "-a $REDIS_PASSWORD", "ping"]
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli",
+          "-a $REDIS_PASSWORD",
+          "ping"
+        ]
       interval: 10s
       timeout: 10s
       retries: 5
 
   nextcloud:
-    image: nextcloud:production
+    image: nextcloud:24.0
     restart: unless-stopped
     volumes:
       - $DOCKER_DATA/nextcloud:/var/www/html
@@ -66,10 +78,12 @@ services:
     networks:
       - traefik_network
       - nextcloud
+    hostname: $HOST
 
 volumes:
   nextcloud_db:
   nextcloud_redis:
+
 
 networks:
   traefik_network:
