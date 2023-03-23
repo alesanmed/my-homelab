@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  navidrome:
+    image: deluan/navidrome:latest
+    restart: unless-stopped
+    user: 1000:1000
+    expose:
+      - 4533
+    environment:
+      - ND_LOGLEVEL=$LOG_LEVEL
+      - ND_DEFAULTLANGUAGE=$LANGUAGE
+      - ND_PROMETHEUS_ENABLED=true
+      - ND_PROMETHEUS_METRICSPATH=$METRICS_ENDPOINT
+    volumes:
+      - $DOCKER_DATA/navidrome/data:/data
+      - $DOCKER_MEDIA/navidrome/music:/music:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.navidrome.rule=Host(`$HOST`)"
+      - "traefik.http.services.navidrome.loadbalancer.server.port=4533"
+      - "traefik.http.routers.navidrome.entryPoints=web, websecure"
+      - "traefik.http.routers.navidrome.middlewares=secured-external"
+
+networks:
+  default:
+    external: true
+    name: ${DEFAULT_NETWORK}
