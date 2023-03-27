@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   jellyfin:
-    image: jellyfin/jellyfin:10.8.2
+    image: jellyfin/jellyfin:10.8.9
     restart: unless-stopped
     user: 1000:1000
     group_add:
