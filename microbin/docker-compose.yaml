@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  microbin:
+    image: danielszabo99/microbin:latest
+    restart: unless-stopped
+    expose:
+      - $PORT
+    volumes:
+      - pasta_data:/app/pasta_data
+    command: --auth-username $AUTH_USER --auth-password $AUTH_PASSWORD --editable --hash-ids --highlightsyntax -p $PORT --private --public-path https://$HOST --qr
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.microbin.rule=Host(`$HOST`)"
+      - "traefik.http.routers.microbin.entryPoints=web,websecure"
+      - "traefik.http.routers.microbin.middlewares=secured-external"
+      - "traefik.http.services.microbin.loadbalancer.server.port=$PORT"
+    networks:
+      - traefik_network
+
+volumes:
+  pasta_data:
+
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
