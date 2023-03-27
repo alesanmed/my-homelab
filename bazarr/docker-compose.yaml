@@ -9,7 +9,6 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - UMASK=002
     volumes:
       - ${DOCKER_DATA}/bazarr/config:/config
       - media_data:/data
