@@ -32,7 +32,6 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - UMASK=002
       - DOCKER_MODS=linuxserver/universal-calibre:calibre #optional
       - OAUTHLIB_RELAX_TOKEN_SCOPE=1 #optional
     volumes:
@@ -42,7 +41,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.calibre.rule=Host(`$WEB_HOST`)"
       - "traefik.http.routers.calibre.entryPoints=web,websecure"
-      - "traefik.http.routers.calibre_desktop.middlewares=secured-external"
+      - "traefik.http.routers.calibre.middlewares=secured-external"
       - traefik.http.services.calibre.loadbalancer.server.port=8083
     deploy:
       resources:
