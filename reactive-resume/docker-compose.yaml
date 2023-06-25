@@ -1,0 +1,93 @@
+version: "3.9"
+services:
+  resume_db:
+    image: postgres:14.0-alpine3.14
+    restart: unless-stopped
+    expose:
+      - 5432
+    volumes:
+      - resume_db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=$POSTGRES_DB
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+    networks:
+      - reactive_resume
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      start_period: 15s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+  resume_server:
+    image: amruthpillai/reactive-resume:server-latest
+    restart: unless-stopped
+    expose:
+      - $SERVER_PORT
+    depends_on:
+      - resume_db
+    environment:
+      - PUBLIC_URL=https://$CLIENT_HOST
+      - PUBLIC_SERVER_URL=https://$SERVER_HOST
+      - POSTGRES_DB=$POSTGRES_DB
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      - POSTGRES_HOST=resume_db
+      - POSTGRES_PORT=5432
+      - SECRET_KEY=$SERVER_SECRET_KEY
+      - JWT_SECRET=$SERVER_JWT_SECRET
+      - JWT_EXPIRY_TIME=604800
+      - PUBLIC_GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+      - GOOGLE_API_KEY=$GOOGLE_API_KEY
+      - MAIL_FROM_NAME=$MAIL_FROM_NAME
+      - MAIL_FROM_EMAIL=$MAIL_FROM_MAIL
+      - MAIL_HOST=$MAIL_SMTP_SERVER
+      - MAIL_PORT=$MAIL_SMTP_PORT
+      - MAIL_USERNAME=$MAIL_USER
+      - MAIL_PASSWORD=$MAIL_PASSWORD
+      - STORAGE_BUCKET=$STORAGE_BUCKET
+      - STORAGE_REGION=$STORAGE_REGION
+      - STORAGE_ACCESS_KEY=$STORAGE_ACCESS_KEY
+      - STORAGE_SECRET_KEY=$STORAGE_SECRET_KEY
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.resume-server.rule=Host(`$SERVER_HOST`)"
+      - "traefik.http.routers.resume-server.entryPoints=web,websecure"
+      - "traefik.http.routers.resume-server.middlewares=secured-external"
+      - "traefik.http.services.resume-server.loadbalancer.server.port=$SERVER_PORT"
+    networks:
+      - traefik_network
+      - reactive_resume
+
+  resume_client:
+    image: amruthpillai/reactive-resume:client-latest
+    restart: unless-stopped
+    expose:
+      - $CLIENT_PORT
+    depends_on:
+      - resume_server
+    environment:
+      - PUBLIC_URL=https://$CLIENT_HOST
+      - PUBLIC_SERVER_URL=https://$SERVER_HOST
+      - PUBLIC_GOOGLE_CLIENT_ID=
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.resume-client.rule=Host(`$CLIENT_HOST`)"
+      - "traefik.http.routers.resume-client.entryPoints=web,websecure"
+      - "traefik.http.routers.resume-client.middlewares=secured-external"
+      - "traefik.http.services.resume-client.loadbalancer.server.port=$CLIENT_PORT"
+    networks:
+      - traefik_network
+      - reactive_resume
+
+volumes:
+  resume_db:
+
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
+  reactive_resume:
+    external: false
