@@ -1,0 +1,45 @@
+version: "3.9"
+services:
+  youtubedl:
+    image: tzahi12345/youtubedl-material:latest
+    restart: unless-stopped
+    expose:
+      - 17442
+    depends_on:
+      - youtubedl-db
+    environment:
+      - ALLOW_CONFIG_MUTATIONS=true
+      - ytdl_mongodb_connection_string=mongodb://youtubedl-db:27017
+      - ytdl_use_local_db=false
+      - write_ytdl_config=true
+    volumes:
+      - $DOCKER_DATA/youtubedl/data:/app/appdata
+      - $DOCKER_DATA/youtubedl/data/users:/app/users
+      - $DOCKER_DATA/youtubedl/data/subscriptions:/app/subscriptions
+      - $DOCKER_MEDIA/youtubedl/audio:/app/audio
+      - $DOCKER_MEDIA/youtubedl/video:/app/video
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.youtubedl.rule=Host(`$HOST`)"
+      - "traefik.http.services.youtubedl.loadbalancer.server.port=17442"
+      - "traefik.http.routers.youtubedl.entryPoints=web, websecure"
+      - "traefik.http.routers.youtubedl.middlewares=secured-local"
+    networks:
+      - traefik_network
+      - youtubedl
+  youtubedl-db:
+    image: mongo
+    restart: unless-stopped
+    expose:
+      - 27017
+    volumes:
+      - $DOCKER_DATA/youtubedl/data/db/:/data/db
+    networks:
+      - youtubedl
+
+networks:
+  traefik_network:
+    external: true
+    name: ${DEFAULT_NETWORK}
+  youtubedl:
+    external: false
