@@ -18,7 +18,7 @@ services:
           cpus: "$MYSQL_CPU_LIMIT"
 
   ghost:
-    image: ghost:5.25.2-alpine
+    image: ghost:5.43.0-alpine
     restart: always
     expose:
       - 2368
