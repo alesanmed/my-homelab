@@ -14,6 +14,7 @@ Copy the `.env.example` file and rename it to `.env`. Replace the variables acco
 | PGDATABASE               | Name of the postgres database to be used in nextcloud   |
 | PGUSER                   | Username for the user created in postgres               |
 | PGPASSWORD               | Password for postgres user                              |
+| DAYS_TO_KEEP             | Backups older than this amount will be deleted          |
 
 ## Deployment
 

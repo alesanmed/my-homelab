@@ -4,6 +4,6 @@ COPY ./postgres-backup.sh /usr/local/bin/postgres-backup.sh
 
 RUN chmod +x /usr/local/bin/postgres-backup.sh
 
-RUN echo "* * * * * /usr/local/bin/postgres-backup.sh" >> /etc/crontabs/root
+RUN echo "0 * * * * /usr/local/bin/postgres-backup.sh" >> /etc/crontabs/root
 
 CMD ["/usr/sbin/crond", "-f", "-l", "0"]
