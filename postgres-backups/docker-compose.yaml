@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  postgres-backup:
+    build:
+      context: .
+    restart: unless-stopped
+    volumes:
+      - ${DOCKER_DATA}/postgres-backup:${BACKUP_PATH}
+    env_file:
+      - .env
+
