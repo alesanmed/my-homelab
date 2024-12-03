@@ -14,11 +14,10 @@ Copy the `.env.example` file and rename it to `.env`. Replace the variables acco
 |-------------------------|--------------------------------------------------|
 | DOCKER_DATA             | Local path where you want the data to be stored  |
 | DEFAULT_NETWORK         | Default network name                             |
-| FRONT_HOST              | Host used for this service                       |
+| HOST                    | Host used for this service                       |
 | POSTGRES_DB             | DB name                                          |
 | POSTGRES_USER           | Postgres user                                    |
 | POSTGRES_PASSWORD       | Postgres password                                |
-| SUPERUSER_EMAIL         | Email of the default superuser                   |
 | MAIL_FROM_NAME          | From name for emails                             |
 | MAIL_FROM_MAIL          | From email for emails                            |
 | MAIL_SMTP_SERVER        | SMTP server URL                                  |
