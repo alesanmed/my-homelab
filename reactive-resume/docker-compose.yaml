@@ -37,6 +37,9 @@ services:
       - traefik.http.routers.resume-storage.entrypoints=web,websecure
       - "traefik.http.routers.resume-storage.middlewares=secured-external"
       - "traefik.http.services.resume-storage.loadbalancer.server.port=9000"
+    networks:
+      - traefik_network
+      - reactive_resume
   # MARK: Chrome Browser (for printing and previews)
   resume_printer:
     image: ghcr.io/browserless/chromium:latest
@@ -55,6 +58,9 @@ services:
       - traefik.http.routers.printer.entrypoints=web,websecure
       - "traefik.http.routers.printer.middlewares=secured-external"
       - "traefik.http.services.printer.loadbalancer.server.port=3000"
+    networks:
+      - traefik_network
+      - reactive_resume
   # MARK: Application
   reactive_resume:
     image: amruthpillai/reactive-resume:v4.1.8
@@ -90,7 +96,7 @@ services:
       SMTP_URL_2: smtp://$MAIL_USER:$MAIL_PASSWORD@$MAIL_SMTP_SERVER:$MAIL_SMTP_PORT # Optional
 
       # -- Storage (Minio) --
-      STORAGE_ENDPOINT: resume_minio
+      STORAGE_ENDPOINT: http://resume_minio
       STORAGE_PORT: 9000
       STORAGE_REGION: $STORAGE_REGION # Optional
       STORAGE_BUCKET: $STORAGE_BUCKET
