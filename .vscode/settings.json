@@ -1,5 +1,6 @@
 {
     "conventionalCommits.scopes": [
-        "postgres-backup"
+        "postgres-backup",
+        "reactive-resume"
     ]
 }

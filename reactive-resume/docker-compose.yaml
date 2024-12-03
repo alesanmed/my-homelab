@@ -1,7 +1,8 @@
 version: "3.9"
 services:
+  # MARK: Database
   resume_db:
-    image: postgres:14.0-alpine3.14
+    image: postgres:16-alpine
     restart: unless-stopped
     expose:
       - 5432
@@ -14,76 +15,106 @@ services:
     networks:
       - reactive_resume
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      start_period: 15s
-      interval: 30s
-      timeout: 30s
-      retries: 3
-  resume_server:
-    image: amruthpillai/reactive-resume:server-latest
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  # MARK: Minio Storage
+  resume_minio:
+    image: minio/minio
+    restart: unless-stopped
+    command: server /data
+    expose:
+      - 9000
+    volumes:
+      - minio_data:/data
+    environment:
+      - MINIO_ROOT_USER=$MINIO_USER
+      - MINIO_ROOT_PASSWORD=$MINIO_PASSWORD
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.resume-storage.rule=Host(`$STORAGE_HOST`)
+      - traefik.http.routers.resume-storage.entrypoints=web,websecure
+      - "traefik.http.routers.resume-storage.middlewares=secured-external"
+      - "traefik.http.services.resume-storage.loadbalancer.server.port=9000"
+  # MARK: Chrome Browser (for printing and previews)
+  resume_printer:
+    image: ghcr.io/browserless/chromium:latest
     restart: unless-stopped
     expose:
-      - $SERVER_PORT
+      - 3000
+    environment:
+      TIMEOUT: $PRINTER_SESSION_TIMEOUT
+      CONCURRENT: $PRINTER_MAX_CONCURRENT_SESSIONS
+      TOKEN: $PRINTER_TOKEN
+      EXIT_ON_HEALTH_FAILURE: true
+      PRE_REQUEST_HEALTH_CHECK: true
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.printer.rule=Host(`$PRINTER_HOST`)
+      - traefik.http.routers.printer.entrypoints=web,websecure
+      - "traefik.http.routers.printer.middlewares=secured-external"
+      - "traefik.http.services.printer.loadbalancer.server.port=3000"
+  # MARK: Application
+  reactive_resume:
+    image: amruthpillai/reactive-resume:v4.1.8
+    restart: unless-stopped
+    expose:
+      - $PORT
     depends_on:
       - resume_db
+      - resume_minio
+      - resume_printer
     environment:
-      - PUBLIC_URL=https://$CLIENT_HOST
-      - PUBLIC_SERVER_URL=https://$SERVER_HOST
-      - POSTGRES_DB=$POSTGRES_DB
-      - POSTGRES_USER=$POSTGRES_USER
-      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
-      - POSTGRES_HOST=resume_db
-      - POSTGRES_PORT=5432
-      - SECRET_KEY=$SERVER_SECRET_KEY
-      - JWT_SECRET=$SERVER_JWT_SECRET
-      - JWT_EXPIRY_TIME=604800
-      - PUBLIC_GOOGLE_CLIENT_ID=
-      - GOOGLE_CLIENT_SECRET=
-      - GOOGLE_API_KEY=$GOOGLE_API_KEY
-      - MAIL_FROM_NAME=$MAIL_FROM_NAME
-      - MAIL_FROM_EMAIL=$MAIL_FROM_MAIL
-      - MAIL_HOST=$MAIL_SMTP_SERVER
-      - MAIL_PORT=$MAIL_SMTP_PORT
-      - MAIL_USERNAME=$MAIL_USER
-      - MAIL_PASSWORD=$MAIL_PASSWORD
-      - STORAGE_BUCKET=$STORAGE_BUCKET
-      - STORAGE_REGION=$STORAGE_REGION
-      - STORAGE_ACCESS_KEY=$STORAGE_ACCESS_KEY
-      - STORAGE_SECRET_KEY=$STORAGE_SECRET_KEY
-    labels:
-      - traefik.enable=true
-      - "traefik.http.routers.resume-server.rule=Host(`$SERVER_HOST`)"
-      - "traefik.http.routers.resume-server.entryPoints=web,websecure"
-      - "traefik.http.routers.resume-server.middlewares=secured-external"
-      - "traefik.http.services.resume-server.loadbalancer.server.port=$SERVER_PORT"
-    networks:
-      - traefik_network
-      - reactive_resume
+      # -- Environment Variables --
+      PORT: $PORT
+      NODE_ENV: production
 
-  resume_client:
-    image: amruthpillai/reactive-resume:client-latest
-    restart: unless-stopped
-    expose:
-      - $CLIENT_PORT
-    depends_on:
-      - resume_server
-    environment:
-      - PUBLIC_URL=https://$CLIENT_HOST
-      - PUBLIC_SERVER_URL=https://$SERVER_HOST
-      - PUBLIC_GOOGLE_CLIENT_ID=
+      # -- URLs --
+      PUBLIC_URL: https://$HOST
+      STORAGE_URL: https://$STORAGE_HOST
+
+      # -- Printer (Chrome) --
+      CHROME_TOKEN: $PRINTER_TOKEN
+      CHROME_URL: wss://$PRINTER_HOST
+
+      # -- Database (Postgres) --
+      DATABASE_URL: postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@resume_db:5432/$POSTGRES_DB
+
+      # -- Auth --
+      ACCESS_TOKEN_SECRET: $ACCESS_TOKEN_SECRET
+      REFRESH_TOKEN_SECRET: $REFRESH_TOKEN_SECRET
+
+      # -- Emails --
+      MAIL_FROM: $MAIL_FROM_NAME <$MAIL_FROM_MAIL>
+      SMTP_URL_2: smtp://$MAIL_USER:$MAIL_PASSWORD@$MAIL_SMTP_SERVER:$MAIL_SMTP_PORT # Optional
+
+      # -- Storage (Minio) --
+      STORAGE_ENDPOINT: $STORAGE_HOST
+      STORAGE_PORT: 9000
+      STORAGE_REGION: $STORAGE_REGION # Optional
+      STORAGE_BUCKET: $STORAGE_BUCKET
+      STORAGE_ACCESS_KEY: $MINIO_USER
+      STORAGE_SECRET_KEY: $MINIO_PASSWORD
+      STORAGE_USE_SSL: false
+      STORAGE_SKIP_BUCKET_CHECK: false
+
+      # -- Feature Flags (Optional) --
+      DISABLE_SIGNUPS: false
+      # DISABLE_EMAIL_AUTH: false
     labels:
       - traefik.enable=true
-      - "traefik.http.routers.resume-client.rule=Host(`$CLIENT_HOST`)"
-      - "traefik.http.routers.resume-client.entryPoints=web,websecure"
-      - "traefik.http.routers.resume-client.middlewares=secured-external"
-      - "traefik.http.services.resume-client.loadbalancer.server.port=$CLIENT_PORT"
+      - "traefik.http.routers.resume.rule=Host(`$HOST`)"
+      - "traefik.http.routers.resume.entryPoints=web,websecure"
+      - "traefik.http.routers.resume.middlewares=secured-external"
+      - "traefik.http.services.resume.loadbalancer.server.port=$PORT"
     networks:
       - traefik_network
       - reactive_resume
 
 volumes:
   resume_db:
-
+  minio_data:
 
 networks:
   traefik_network:
