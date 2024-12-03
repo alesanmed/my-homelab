@@ -90,7 +90,7 @@ services:
       SMTP_URL_2: smtp://$MAIL_USER:$MAIL_PASSWORD@$MAIL_SMTP_SERVER:$MAIL_SMTP_PORT # Optional
 
       # -- Storage (Minio) --
-      STORAGE_ENDPOINT: $STORAGE_HOST
+      STORAGE_ENDPOINT: resume_minio
       STORAGE_PORT: 9000
       STORAGE_REGION: $STORAGE_REGION # Optional
       STORAGE_BUCKET: $STORAGE_BUCKET
